@@ -12,8 +12,16 @@ import Alamofire
 import Firebase
 import AVFoundation
 import Speech
+import CoreImage
 
-class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDataSource, UIPickerViewDelegate, SFSpeechRecognizerDelegate {
+class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDataSource, UIPickerViewDelegate, SFSpeechRecognizerDelegate, AVCaptureMetadataOutputObjectsDelegate {
+    
+    var captureSession:AVCaptureSession?
+    var previewLayer:AVCaptureVideoPreviewLayer?
+    var sessionOutput = AVCapturePhotoOutput()
+    var currentCaptureDevice: AVCaptureDevice?
+    
+    let supportedFaceType = [ AVMetadataObject.ObjectType.face]
     
     var valor : String!
     var contrato = [Contrato]()
@@ -31,7 +39,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
-
+    
     
     @IBOutlet weak var valorLbl: UILabel!
     @IBOutlet weak var pickerText: UIPickerView!
@@ -39,6 +47,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     @IBOutlet weak var frase1lbl: UILabel!
     @IBOutlet weak var fraseTexto: UITextView!
     @IBOutlet weak var confirmarBtn: FancyButton!
+    @IBOutlet weak var cameraView: UIView!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -66,9 +75,9 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
                 print("Speech recognition not yet authorized")
             }
             
-//            OperationQueue.main.addOperation() {
-//                self.microphoneButton.isEnabled = isButtonEnabled
-//            }
+            //            OperationQueue.main.addOperation() {
+            //                self.microphoneButton.isEnabled = isButtonEnabled
+            //            }
         }
         
         locationManger.delegate = self
@@ -80,11 +89,11 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         var myStringArr = valor.components(separatedBy: ";")
         
         self.valorLbl.text = myStringArr[0]
-        lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
-        lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
-        strIDFV = myStringArr[3].replacingOccurrences(of: "IDFV=", with: "")
-        contratoid = myStringArr[4].replacingOccurrences(of: "contrato=", with: "")
-        vendedor = myStringArr[5].replacingOccurrences(of: "vendedor=", with: "")
+        //lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
+        //lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
+        strIDFV = myStringArr[1].replacingOccurrences(of: "IDFV=", with: "")
+        contratoid = myStringArr[2].replacingOccurrences(of: "contrato=", with: "")
+        vendedor = myStringArr[3].replacingOccurrences(of: "vendedor=", with: "")
         pickOption.removeAll()
         DataService.ds.REF_CARTEIRA.observe(.value, with: { (snapshot) in
             if let snapshot = snapshot.children.allObjects as? [FIRDataSnapshot] {
@@ -122,23 +131,23 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         //            }
         //        })
         
-        let coordinate = CLLocation(latitude: lat, longitude: lon)
-        let coordinate1 = CLLocation(latitude: (locationManger.location?.coordinate.latitude)!, longitude: (locationManger.location?.coordinate.longitude)!)
-        
-        let distanceInMeters = coordinate.distance(from: coordinate1) // result is in meters
-        if (distanceInMeters >= 1000) {
-            let refreshAlert = UIAlertController(title: "Alerta", message: "Vendedor está a mais de 1km, confirma a compra?", preferredStyle: UIAlertControllerStyle.alert)
-            
-            refreshAlert.addAction(UIAlertAction(title: "Sim", style: .default, handler: { (action: UIAlertAction!) in
-                print("Handle Ok logic here")
-            }))
-            
-            refreshAlert.addAction(UIAlertAction(title: "Não", style: .cancel, handler: { (action: UIAlertAction!) in
-                return
-            }))
-            
-            present(refreshAlert, animated: true, completion: nil)
-        }
+        //        let coordinate = CLLocation(latitude: lat, longitude: lon)
+        //        let coordinate1 = CLLocation(latitude: (locationManger.location?.coordinate.latitude)!, longitude: (locationManger.location?.coordinate.longitude)!)
+        //
+        //        let distanceInMeters = coordinate.distance(from: coordinate1) // result is in meters
+        //        if (distanceInMeters >= 1000) {
+        //            let refreshAlert = UIAlertController(title: "Alerta", message: "Vendedor está a mais de 1km, confirma a compra?", preferredStyle: UIAlertControllerStyle.alert)
+        //
+        //            refreshAlert.addAction(UIAlertAction(title: "Sim", style: .default, handler: { (action: UIAlertAction!) in
+        //                print("Handle Ok logic here")
+        //            }))
+        //
+        //            refreshAlert.addAction(UIAlertAction(title: "Não", style: .cancel, handler: { (action: UIAlertAction!) in
+        //                return
+        //            }))
+        //
+        //            present(refreshAlert, animated: true, completion: nil)
+        //        }
         
     }
     
@@ -154,72 +163,149 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         }
     }
     
-    @IBAction func confirmarPressed(_ sender: UIButton) {
-        self.frase1lbl.isHidden = false
-        self.fraseTexto.isHidden = false
-        //self.confirmarBtn.isEnabled = false
+    func getFrontCamera() -> AVCaptureDevice?{
+        let videoDevices = AVCaptureDevice.devices(for: AVMediaType.video)
         
-        if audioEngine.isRunning {
-            audioEngine.stop()
-            recognitionRequest?.endAudio()
-            if texto.uppercased() != self.fraseTexto.text.uppercased() {
-                let alertController = UIAlertController(title: "Alerta", message: "Frase não confere!", preferredStyle: .alert)
-                //We add buttons to the alert controller by creating UIAlertActions:
-                let actionOk = UIAlertAction(title: "OK",
-                                             style: .default,
-                                             handler: nil) //You can use a block here to handle a press on this button
-                
-                alertController.addAction(actionOk)
-                self.present(alertController, animated: true, completion: nil)
-                self.frase1lbl.isHidden = true
-                self.fraseTexto.isHidden = true
-                self.confirmarBtn.isEnabled = true
-                return
+        
+        for device in videoDevices{
+            let device = device as! AVCaptureDevice
+            if device.position == AVCaptureDevice.Position.front {
+                return device
             }
+        }
+        return nil
+    }
+    
+    @IBAction func confirmarPressed(_ sender: UIButton) {
+        let captureDevice = getFrontCamera()
+        
+        //let captureDevice = AVCaptureDevice.default(for: AVMediaType.video)
+        do {
+            // Get an instance of the AVCaptureDeviceInput class using the previous device object.
+            let input = try AVCaptureDeviceInput(device: captureDevice!)
             
+            // Initialize the captureSession object.
+            captureSession = AVCaptureSession()
             
-            let randomNum:UInt32 = arc4random_uniform(10000) // range is 0 to 99999
-            ID = String(format: "%05d", randomNum) //string works too
-            ID = ID + String(round(Date().timeIntervalSince1970))
-            let data = round(Date().timeIntervalSince1970)
+            // Set the input device on the capture session.
+            captureSession?.addInput(input)
             
-            let posttransacao : Dictionary<String, AnyObject> = [
-                "carteira": carteiraField.text as AnyObject,
-                "data": data as AnyObject,
-                "idContrato": contratoid as AnyObject,
-                "latitude": lat as AnyObject,
-                "longitude": lon as AnyObject,
-                "user": userUUID as AnyObject,
-                "valor": self.valorLbl.text as AnyObject,
-                "vedendor" : vendedor as AnyObject,
-                "hashBlockChain": "" as AnyObject,
-                "id" : ID as AnyObject
-            ]
-            let firebasePost = DataService.ds.REF_TRANSACAO.childByAutoId()
-            firebasePost.setValue(posttransacao)
+            // Initialize a AVCaptureMetadataOutput object and set it as the output device to the capture session.
+            let captureMetadataOutput = AVCaptureMetadataOutput()
+            captureSession?.addOutput(captureMetadataOutput)
             
+            // Set delegate and use the default dispatch queue to execute the call back
+            captureMetadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+            captureMetadataOutput.metadataObjectTypes = supportedFaceType
             
-            let controller = self.storyboard?.instantiateViewController(withIdentifier: "ReciboVC") as! ReciboVC
-            controller.valor = self.valorLbl.text
-            controller.data = data
-            controller.id = ID
-            controller.carteira = carteiraField.text
+            // Initialize the video preview layer and add it as a sublayer to the viewPreview view's layer.
+            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
+            previewLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
+            previewLayer?.frame = cameraView.bounds
+            cameraView.layer.addSublayer(previewLayer!)
             
-            self.frase1lbl.isHidden = true
-            self.fraseTexto.isHidden = true
-            self.confirmarBtn.setTitle("Confirmar" , for: .normal)
-            
-            self.present(controller, animated: true, completion: nil)
-
-        } else {
-            startRecording()
-            self.confirmarBtn.setTitle("Parar Gravação", for: .normal)
-            self.confirmarBtn.setNeedsDisplay()
-            self.frase1lbl.setNeedsDisplay()
-            self.fraseTexto.setNeedsDisplay()
+            // Start video capture.
+            captureSession?.startRunning()
+        } catch {
+            // If any error occurs, simply print it out and don't continue any more.
+            print(error)
+            return
         }
         
+        //        self.frase1lbl.isHidden = false
+        //        self.fraseTexto.isHidden = false
+        //        //self.confirmarBtn.isEnabled = false
+        //
+        //        if audioEngine.isRunning {
+        //            audioEngine.stop()
+        //            recognitionRequest?.endAudio()
+        //            if texto.uppercased() != self.fraseTexto.text.uppercased() {
+        //                let alertController = UIAlertController(title: "Alerta", message: "Frase não confere!", preferredStyle: .alert)
+        //                //We add buttons to the alert controller by creating UIAlertActions:
+        //                let actionOk = UIAlertAction(title: "OK",
+        //                                             style: .default,
+        //                                             handler: nil) //You can use a block here to handle a press on this button
+        //
+        //                alertController.addAction(actionOk)
+        //                self.present(alertController, animated: true, completion: nil)
+        //                self.frase1lbl.isHidden = true
+        //                self.fraseTexto.isHidden = true
+        //                self.confirmarBtn.isEnabled = true
+        //                return
+        //            }
+        //
+        //
+        //            let randomNum:UInt32 = arc4random_uniform(10000) // range is 0 to 99999
+        //            ID = String(format: "%05d", randomNum) //string works too
+        //            ID = ID + String(round(Date().timeIntervalSince1970))
+        //            let data = round(Date().timeIntervalSince1970)
+        //
+        //            let posttransacao : Dictionary<String, AnyObject> = [
+        //                "carteira": carteiraField.text as AnyObject,
+        //                "data": data as AnyObject,
+        //                "idContrato": contratoid as AnyObject,
+        //                "latitude": lat as AnyObject,
+        //                "longitude": lon as AnyObject,
+        //                "user": userUUID as AnyObject,
+        //                "valor": self.valorLbl.text as AnyObject,
+        //                "vedendor" : vendedor as AnyObject,
+        //                "hashBlockChain": "" as AnyObject,
+        //                "id" : ID as AnyObject
+        //            ]
+        //            let firebasePost = DataService.ds.REF_TRANSACAO.childByAutoId()
+        //            firebasePost.setValue(posttransacao)
+        //
+        //
+        //            let controller = self.storyboard?.instantiateViewController(withIdentifier: "ReciboVC") as! ReciboVC
+        //            controller.valor = self.valorLbl.text
+        //            controller.data = data
+        //            controller.id = ID
+        //            controller.carteira = carteiraField.text
+        //
+        //            self.frase1lbl.isHidden = true
+        //            self.fraseTexto.isHidden = true
+        //            self.confirmarBtn.setTitle("Confirmar" , for: .normal)
+        //
+        //            self.present(controller, animated: true, completion: nil)
+        //
+        //        } else {
+        //            startRecording()
+        //            self.confirmarBtn.setTitle("Parar Gravação", for: .normal)
+        //            self.confirmarBtn.setNeedsDisplay()
+        //            self.frase1lbl.setNeedsDisplay()
+        //            self.fraseTexto.setNeedsDisplay()
+        //        }
+        //
     }
+    
+    func capture(_ captureOutput: AVCapturePhotoOutput,
+                        didFinishProcessingPhotoSampleBuffer photoSampleBuffer: CMSampleBuffer?,
+                        previewPhotoSampleBuffer: CMSampleBuffer?,
+                        resolvedSettings: AVCaptureResolvedPhotoSettings,
+                        bracketSettings: AVCaptureBracketedStillImageSettings?,
+                        error: Error?) {
+        // Make sure we get some photo sample buffer
+        guard error == nil,
+            let photoSampleBuffer = photoSampleBuffer else {
+                print("Error capturing photo: \(String(describing: error))")
+                return
+        }
+        
+        // Convert photo same buffer to a jpeg image data by using AVCapturePhotoOutput
+        guard let imageData = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: photoSampleBuffer, previewPhotoSampleBuffer: previewPhotoSampleBuffer) else {
+            return
+        }
+        
+        // Initialise an UIImage with our image data
+        let capturedImage = UIImage.init(data: imageData , scale: 1.0)
+        if let image = capturedImage {
+            // Save our captured image to photos album
+            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        }
+    }
+    
+    
+    
     
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1
@@ -249,12 +335,12 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
             try audioSession.setCategory(AVAudioSessionCategoryRecord)
             try audioSession.setMode(AVAudioSessionModeMeasurement)
             try audioSession.setActive(true, with: .notifyOthersOnDeactivation)
-//            if blueBtn.currentTitle == "Bluetooth OFF" {
-//                try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with: AVAudioSessionCategoryOptions.allowBluetooth)
-//            } else {
-                try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with: AVAudioSessionCategoryOptions.defaultToSpeaker)
-//            }
-//            
+            //            if blueBtn.currentTitle == "Bluetooth OFF" {
+            //                try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with: AVAudioSessionCategoryOptions.allowBluetooth)
+            //            } else {
+            try audioSession.setCategory(AVAudioSessionCategoryPlayAndRecord, with: AVAudioSessionCategoryOptions.defaultToSpeaker)
+            //            }
+            //
         } catch {
             print("audioSession properties weren't set because of an error.")
         }
@@ -262,10 +348,10 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         recognitionRequest = SFSpeechAudioBufferRecognitionRequest()
         
         let inputNode = audioEngine.inputNode
-//            else {
-//            fatalError("Audio engine has no input node")
-//
-//        }
+        //            else {
+        //            fatalError("Audio engine has no input node")
+        //
+        //        }
         
         guard let recognitionRequest = recognitionRequest else {
             fatalError("Unable to create an SFSpeechAudioBufferRecognitionRequest object")
@@ -308,5 +394,8 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
             print("audioEngine couldn't start because of an error.")
         }
     }
-
+    
+    @IBAction func voltarPressed(_ sender: UIButton) {
+        self.dismiss(animated: true, completion: nil)
+    }
 }

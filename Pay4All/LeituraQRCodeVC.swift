@@ -13,6 +13,7 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
 
    // @IBOutlet weak var topbar: UIView!
     @IBOutlet weak var messageLabel: UILabel!
+    @IBOutlet weak var cameraView: UIView!
     
     var captureSession:AVCaptureSession?
     var videoPreviewLayer:AVCaptureVideoPreviewLayer?
@@ -29,11 +30,20 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
                               AVMetadataObject.ObjectType.pdf417,
                               AVMetadataObject.ObjectType.qr]
     
+    
+    
     var textoQRCode : String!
     
     override func viewDidLoad() {
         super.viewDidLoad()
+    }
 
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
+    @IBAction func capturePressed(_ sender: UIButton) {
         // Get an instance of the AVCaptureDevice class to initialize a device object and provide the video as the media type parameter.
         let captureDevice = AVCaptureDevice.default(for: AVMediaType.video)
         do {
@@ -57,8 +67,8 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
             // Initialize the video preview layer and add it as a sublayer to the viewPreview view's layer.
             videoPreviewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
             videoPreviewLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
-            videoPreviewLayer?.frame = view.layer.bounds
-            view.layer.addSublayer(videoPreviewLayer!)
+            videoPreviewLayer?.frame = cameraView.bounds
+            cameraView.layer.addSublayer(videoPreviewLayer!)
             
             // Start video capture.
             captureSession?.startRunning()
@@ -73,8 +83,8 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
             if let qrCodeFrameView = qrCodeFrameView {
                 qrCodeFrameView.layer.borderColor = UIColor.green.cgColor
                 qrCodeFrameView.layer.borderWidth = 2
-                view.addSubview(qrCodeFrameView)
-                view.bringSubview(toFront: qrCodeFrameView)
+                cameraView.addSubview(qrCodeFrameView)
+                cameraView.bringSubview(toFront: qrCodeFrameView)
             }
             
         } catch {
@@ -83,13 +93,7 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
             return
         }
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
     
-
     func metadataOutput(_ captureOutput: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
         
         // Check if the metadataObjects array is not nil and it contains at least one object.
@@ -126,7 +130,10 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
         }
     }
     
-
+    @IBAction func voltarPressed(_ sender: Any) {
+          self.dismiss(animated: true, completion: nil)
+    }
+    
 //    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
 //        if segue.identifier == "ConfirmacaoVC" {
 //            let dvc = segue.destination as! ConfirmacaoVC

@@ -11,6 +11,25 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "ConfirmacaoVC.confirmarPressed(_:):ConfirmacaoVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "AVCaptureDevice.Position.front">
+            </PersistentString>
+            <PersistentString
+               value = "device.position">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "&quot;teste \(error)&quot;">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "GenerateQRCode.displayQRcode(UIButton) -&gt; ():GenerateQRCode.swift">
          <PersistentStrings>
             <PersistentString
@@ -49,6 +68,9 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "closure #1 in closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
+      </ContextState>
+      <ContextState
          contextName = "CadastroUsuarioVC.detect() -&gt; ():CadastroUsuarioVC.swift">
          <PersistentStrings>
             <PersistentString
@@ -57,7 +79,12 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "closure #1 in closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
+         contextName = "LeituraQRCodeVC.metadataOutput(_:didOutput:from:):LeituraQRCodeVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "metadataObj.stringValue">
+            </PersistentString>
+         </PersistentStrings>
       </ContextState>
    </ContextStates>
 </VariablesViewState>

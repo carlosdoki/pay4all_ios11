@@ -91,8 +91,8 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         var myStringArr = valor.components(separatedBy: ";")
         
         self.valorLbl.text = myStringArr[0]
-//        lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
-//        lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
+        //        lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
+        //        lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
         strIDFV = myStringArr[1].replacingOccurrences(of: "IDFV=", with: "")
         contratoid = myStringArr[2].replacingOccurrences(of: "contrato=", with: "")
         vendedor = myStringArr[3].replacingOccurrences(of: "vendedor=", with: "")
@@ -181,6 +181,18 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     
     
     @IBAction func confirmarPressed(_ sender: UIButton) {
+        if carteiraField.text == "" {
+            let alertController = UIAlertController(title: "Alerta", message: "Favor escolher uma carteira!", preferredStyle: .alert)
+            let actionOk = UIAlertAction(title: "OK",
+                                         style: .default,
+                                         handler: nil) //You can use a block here to handle a press on this button
+            
+            alertController.addAction(actionOk)
+            
+            self.present(alertController, animated: true, completion: nil)
+            return
+        }
+        
         if confirmarBtn.titleLabel?.text == "CAPTURAR" {
             captureSession?.stopRunning()
             confirmarBtn.setTitle("CONFIRMAR",for: .normal)

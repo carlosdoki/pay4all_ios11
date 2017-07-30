@@ -11,13 +11,18 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "ConfirmacaoVC.confirmarPressed(_:):ConfirmacaoVC.swift">
+         contextName = "LeituraQRCodeVC.metadataOutput(_:didOutput:from:):LeituraQRCodeVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "AVCaptureDevice.Position.front">
+               value = "metadataObj.stringValue">
             </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "ConfirmacaoVC.metadataOutput(_:didOutput:from:):ConfirmacaoVC.swift">
+         <PersistentStrings>
             <PersistentString
-               value = "device.position">
+               value = "faceFrameView">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -68,6 +73,20 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
+         contextName = "ConfirmacaoVC.confirmarPressed(_:):ConfirmacaoVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "AVCaptureDevice.Position.front">
+            </PersistentString>
+            <PersistentString
+               value = "confirmarBtn.titleLabel?.text">
+            </PersistentString>
+            <PersistentString
+               value = "device.position">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
          contextName = "closure #1 in closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
       </ContextState>
       <ContextState
@@ -75,14 +94,6 @@
          <PersistentStrings>
             <PersistentString
                value = "faces.first">
-            </PersistentString>
-         </PersistentStrings>
-      </ContextState>
-      <ContextState
-         contextName = "LeituraQRCodeVC.metadataOutput(_:didOutput:from:):LeituraQRCodeVC.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "metadataObj.stringValue">
             </PersistentString>
          </PersistentStrings>
       </ContextState>

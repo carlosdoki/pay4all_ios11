@@ -122,6 +122,8 @@ class LeituraQRCodeVC: UIViewController, AVCaptureMetadataOutputObjectsDelegate 
                 //navigationController?.pushViewController(confirmacaoVC, animated: true)
                 
                 //self.performSegue(withIdentifier: "ConfirmacaoVC", sender: nil)
+                // Start video capture.
+                captureSession?.stopRunning()
                 let controller = self.storyboard?.instantiateViewController(withIdentifier: "ConfirmacaoVC") as! ConfirmacaoVC
                 controller.valor = metadataObj.stringValue
                 self.present(controller, animated: true, completion: nil)

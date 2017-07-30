@@ -20,6 +20,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     var previewLayer:AVCaptureVideoPreviewLayer?
     var sessionOutput = AVCapturePhotoOutput()
     var currentCaptureDevice: AVCaptureDevice?
+    var faceFrameView:UIView?
     
     let supportedFaceType = [ AVMetadataObject.ObjectType.face]
     
@@ -35,6 +36,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     var contratoid  = ""
     var vendedor = ""
     var texto = ""
+    
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale.init(identifier: "pt_BR"))  //1
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
@@ -89,8 +91,8 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         var myStringArr = valor.components(separatedBy: ";")
         
         self.valorLbl.text = myStringArr[0]
-        //lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
-        //lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
+//        lat = Double(myStringArr[1].replacingOccurrences(of: "lat=", with: ""))!
+//        lon = Double(myStringArr[2].replacingOccurrences(of: "lon=", with: ""))!
         strIDFV = myStringArr[1].replacingOccurrences(of: "IDFV=", with: "")
         contratoid = myStringArr[2].replacingOccurrences(of: "contrato=", with: "")
         vendedor = myStringArr[3].replacingOccurrences(of: "vendedor=", with: "")
@@ -176,40 +178,59 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         return nil
     }
     
+    
+    
     @IBAction func confirmarPressed(_ sender: UIButton) {
-        let captureDevice = getFrontCamera()
-        
-        //let captureDevice = AVCaptureDevice.default(for: AVMediaType.video)
-        do {
-            // Get an instance of the AVCaptureDeviceInput class using the previous device object.
-            let input = try AVCaptureDeviceInput(device: captureDevice!)
+        if confirmarBtn.titleLabel?.text == "CAPTURAR" {
+            captureSession?.stopRunning()
+            confirmarBtn.setTitle("CONFIRMAR",for: .normal)
+        } else {
+            let captureDevice = getFrontCamera()
             
-            // Initialize the captureSession object.
-            captureSession = AVCaptureSession()
-            
-            // Set the input device on the capture session.
-            captureSession?.addInput(input)
-            
-            // Initialize a AVCaptureMetadataOutput object and set it as the output device to the capture session.
-            let captureMetadataOutput = AVCaptureMetadataOutput()
-            captureSession?.addOutput(captureMetadataOutput)
-            
-            // Set delegate and use the default dispatch queue to execute the call back
-            captureMetadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
-            captureMetadataOutput.metadataObjectTypes = supportedFaceType
-            
-            // Initialize the video preview layer and add it as a sublayer to the viewPreview view's layer.
-            previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
-            previewLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
-            previewLayer?.frame = cameraView.bounds
-            cameraView.layer.addSublayer(previewLayer!)
-            
-            // Start video capture.
-            captureSession?.startRunning()
-        } catch {
-            // If any error occurs, simply print it out and don't continue any more.
-            print(error)
-            return
+            //let captureDevice = AVCaptureDevice.default(for: AVMediaType.video)
+            do {
+                // Get an instance of the AVCaptureDeviceInput class using the previous device object.
+                let input = try AVCaptureDeviceInput(device: captureDevice!)
+                
+                // Initialize the captureSession object.
+                captureSession = AVCaptureSession()
+                
+                // Set the input device on the capture session.
+                captureSession?.addInput(input)
+                
+                // Initialize a AVCaptureMetadataOutput object and set it as the output device to the capture session.
+                
+                let captureMetadataOutput = AVCaptureMetadataOutput()
+                captureSession?.addOutput(captureMetadataOutput)
+                
+                // Set delegate and use the default dispatch queue to execute the call back
+                captureMetadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
+                captureMetadataOutput.metadataObjectTypes = supportedFaceType
+                
+                // Initialize the video preview layer and add it as a sublayer to the viewPreview view's layer.
+                previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
+                previewLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
+                previewLayer?.frame = cameraView.bounds
+                cameraView.layer.addSublayer(previewLayer!)
+                
+                // Start video capture.
+                captureSession?.startRunning()
+                
+                faceFrameView = UIView()
+                
+                if let faceFrameView = faceFrameView {
+                    faceFrameView.layer.borderColor = UIColor.red.cgColor
+                    faceFrameView.layer.borderWidth = 2
+                    cameraView.addSubview(faceFrameView)
+                    cameraView.bringSubview(toFront: faceFrameView)
+                }
+                
+                confirmarBtn.setTitle("CAPTURAR",for: .normal)
+            } catch {
+                // If any error occurs, simply print it out and don't continue any more.
+                print(error)
+                return
+            }
         }
         
         //        self.frase1lbl.isHidden = false
@@ -278,32 +299,76 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         //
     }
     
-    func capture(_ captureOutput: AVCapturePhotoOutput,
-                        didFinishProcessingPhotoSampleBuffer photoSampleBuffer: CMSampleBuffer?,
-                        previewPhotoSampleBuffer: CMSampleBuffer?,
-                        resolvedSettings: AVCaptureResolvedPhotoSettings,
-                        bracketSettings: AVCaptureBracketedStillImageSettings?,
-                        error: Error?) {
-        // Make sure we get some photo sample buffer
-        guard error == nil,
-            let photoSampleBuffer = photoSampleBuffer else {
-                print("Error capturing photo: \(String(describing: error))")
-                return
-        }
+    func metadataOutput(_ captureOutput: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
         
-        // Convert photo same buffer to a jpeg image data by using AVCapturePhotoOutput
-        guard let imageData = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: photoSampleBuffer, previewPhotoSampleBuffer: previewPhotoSampleBuffer) else {
+        
+        // Check if the metadataObjects array is not nil and it contains at least one object.
+        if metadataObjects == nil || metadataObjects.count == 0 {
+            faceFrameView?.frame = CGRect.zero
+            //messageLabel.text = "No QR/barcode is detected"
             return
         }
         
-        // Initialise an UIImage with our image data
-        let capturedImage = UIImage.init(data: imageData , scale: 1.0)
-        if let image = capturedImage {
-            // Save our captured image to photos album
-            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+        // Get the metadata object.
+        let metadataObj = metadataObjects[0] as! AVMetadataFaceObject
+        
+        if supportedFaceType.contains(metadataObj.type) {
+            
+            captureSession?.stopRunning()
+            let data = round(Date().timeIntervalSince1970)
+            let randomNum:UInt32 = arc4random_uniform(10000) // range is 0 to 99999
+            ID = String(format: "%05d", randomNum) //string works too
+            //ID = ID + String(round(Date().timeIntervalSince1970))
+            
+            let posttransacao : Dictionary<String, AnyObject> = [
+                "carteira": carteiraField.text as AnyObject,
+                "data": data as AnyObject,
+                "idContrato": contratoid as AnyObject,
+                "latitude": lat as AnyObject,
+                "longitude": lon as AnyObject,
+                "user": userUUID as AnyObject,
+                "valor": self.valorLbl.text as AnyObject,
+                "vedendor" : vendedor as AnyObject
+            ]
+            let firebasePost = DataService.ds.REF_TRANSACAO.childByAutoId()
+            firebasePost.setValue(posttransacao)
+            
+            let controller = self.storyboard?.instantiateViewController(withIdentifier: "ReciboVC") as! ReciboVC
+            controller.valor = self.valorLbl.text
+            controller.data = data
+            controller.id = ID
+            controller.carteira = carteiraField.text
+            
+            self.frase1lbl.isHidden = true
+            self.fraseTexto.isHidden = true
+            self.confirmarBtn.setTitle("Confirmar" , for: .normal)
+            
+            self.present(controller, animated: true, completion: nil)
+            //
+            //            let renderer = UIGraphicsImageRenderer(size: (cameraView?.bounds.size)!)
+            //            let image = renderer.image { ctx in
+            //                view.drawHierarchy(in: (cameraView?.bounds)!, afterScreenUpdates: true)
+            //            }
+            //
+            //            let img = image
+            //
+            //            if let imgData = UIImageJPEGRepresentation(img, 0.2) {
+            //                let imguid = NSUUID().uuidString
+            //                let metadata = FIRStorageMetadata()
+            //                metadata.contentType = "image/jpeg"
+            //
+            //                DataService.ds.REF_POST_IMAGES.child(imguid).put(imgData, metadata: metadata) { (metadata, error) in
+            //                    if error != nil {
+            //                        print("DOKI: Unabled to upload to Firebase storage")
+            //                    } else {
+            //                        print("DOKI: Successfully uploaded image to Firebase storage")
+            //                        let downloadUrl = (metadata?.downloadURL()?.absoluteURL.absoluteString)!
+            //
+            //                    }
+            //                }
+            
         }
     }
-    
     
     
     
@@ -321,6 +386,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     
     func pickerView(_ pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
         carteiraField.text = pickOption[row]
+        self.view.endEditing(true)
     }
     
     func startRecording() {

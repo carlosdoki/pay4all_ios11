@@ -13,6 +13,7 @@ import Firebase
 class MainVC: UIViewController {
 
     @IBOutlet weak var leadingSuperior: NSLayoutConstraint!
+    @IBOutlet weak var leadingPrincipal: NSLayoutConstraint!
     @IBOutlet weak var leadingConstraint: NSLayoutConstraint!
     @IBOutlet weak var profileImg: CircleView!
     @IBOutlet weak var saudacaoLbl: UILabel!
@@ -51,11 +52,13 @@ class MainVC: UIViewController {
 
     @IBAction func menuButton(_ sender: UIButton) {
         if (menuShowing) {
+            leadingConstraint.constant = 0
+            leadingSuperior.constant = 0
+            leadingPrincipal.constant = 0
+        } else {
             leadingConstraint.constant = -280
             leadingSuperior.constant = 0
-        } else {
-            leadingConstraint.constant = 0
-            leadingSuperior.constant = 280
+            leadingPrincipal.constant = 0
             UIView.animate(withDuration: 0.4, animations: {
                 self.menuView.alpha = 1
                 self.view.layoutIfNeeded()
@@ -89,7 +92,7 @@ class MainVC: UIViewController {
     }
 
     @IBAction func geraQRPressed(_ sender: Any) {
-        performSegue(withIdentifier: "PagarSegue", sender: nil)
+        performSegue(withIdentifier: "gerarQRSegue", sender: nil)
     }
     @IBAction func historicoPressed(_ sender: Any) {
         performSegue(withIdentifier: "HistoricoVCSegue", sender: nil)

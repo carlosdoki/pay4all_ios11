@@ -51,5 +51,7 @@
 	<string>Precisamos do acesso ao microfone para poder autenticar as transações.</string>
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Precisamos do acesso ao microfone para poder autenticar as transações.</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Acesso ao incluir fotos</string>
 </dict>
 </plist>

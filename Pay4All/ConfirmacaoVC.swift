@@ -13,8 +13,10 @@ import Firebase
 import AVFoundation
 import Speech
 import CoreImage
+import AVKit
+import Vision
 
-class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDataSource, UIPickerViewDelegate, SFSpeechRecognizerDelegate, AVCaptureMetadataOutputObjectsDelegate {
+class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDataSource, UIPickerViewDelegate, SFSpeechRecognizerDelegate, AVCaptureVideoDataOutputSampleBufferDelegate {
     
     var captureSession:AVCaptureSession?
     var previewLayer:AVCaptureVideoPreviewLayer?
@@ -36,6 +38,7 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
     var contratoid  = ""
     var vendedor = ""
     var texto = ""
+    var qtdeFotos = 0
     
     private let speechRecognizer = SFSpeechRecognizer(locale: Locale.init(identifier: "pt_BR"))  //1
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
@@ -165,19 +168,16 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         }
     }
     
-    func getFrontCamera() -> AVCaptureDevice?{
-        let videoDevices = AVCaptureDevice.devices(for: AVMediaType.video)
-        
-        
-        for device in videoDevices{
-            let device = device as! AVCaptureDevice
-            if device.position == AVCaptureDevice.Position.front {
-                return device
+    func getDevice(position: AVCaptureDevice.Position) -> AVCaptureDevice? {
+        let devices: NSArray = AVCaptureDevice.devices() as NSArray;
+        for de in devices {
+            let deviceConverted = de as! AVCaptureDevice
+            if(deviceConverted.position == position){
+                return deviceConverted
             }
         }
         return nil
     }
-    
     
     
     @IBAction func confirmarPressed(_ sender: UIButton) {
@@ -196,53 +196,30 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         if confirmarBtn.titleLabel?.text == "CAPTURAR" {
             captureSession?.stopRunning()
             confirmarBtn.setTitle("CONFIRMAR",for: .normal)
+            qtdeFotos = 0
         } else {
-            let captureDevice = getFrontCamera()
+            let captureSession = AVCaptureSession()
+            captureSession.sessionPreset = .photo
+            //guard let captureDevice = AVCaptureDevice.default(for: .video) else { return }
+            guard let captureDevice = getDevice(position: .front) else { return }
+            guard let input = try? AVCaptureDeviceInput(device: captureDevice) else { return }
             
-            //let captureDevice = AVCaptureDevice.default(for: AVMediaType.video)
-            do {
-                // Get an instance of the AVCaptureDeviceInput class using the previous device object.
-                let input = try AVCaptureDeviceInput(device: captureDevice!)
-                
-                // Initialize the captureSession object.
-                captureSession = AVCaptureSession()
-                
-                // Set the input device on the capture session.
-                captureSession?.addInput(input)
-                
-                // Initialize a AVCaptureMetadataOutput object and set it as the output device to the capture session.
-                
-                let captureMetadataOutput = AVCaptureMetadataOutput()
-                captureSession?.addOutput(captureMetadataOutput)
-                
-                // Set delegate and use the default dispatch queue to execute the call back
-                captureMetadataOutput.setMetadataObjectsDelegate(self, queue: DispatchQueue.main)
-                captureMetadataOutput.metadataObjectTypes = supportedFaceType
-                
-                // Initialize the video preview layer and add it as a sublayer to the viewPreview view's layer.
-                previewLayer = AVCaptureVideoPreviewLayer(session: captureSession!)
-                previewLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
-                previewLayer?.frame = cameraView.bounds
-                cameraView.layer.addSublayer(previewLayer!)
-                
-                // Start video capture.
-                captureSession?.startRunning()
-                
-                faceFrameView = UIView()
-                
-                if let faceFrameView = faceFrameView {
-                    faceFrameView.layer.borderColor = UIColor.red.cgColor
-                    faceFrameView.layer.borderWidth = 2
-                    cameraView.addSubview(faceFrameView)
-                    cameraView.bringSubview(toFront: faceFrameView)
-                }
-                
-                confirmarBtn.setTitle("CAPTURAR",for: .normal)
-            } catch {
-                // If any error occurs, simply print it out and don't continue any more.
-                print(error)
-                return
-            }
+            captureSession.addInput(input)
+            captureSession.startRunning()
+            
+            let previewLayer = AVCaptureVideoPreviewLayer(session: captureSession)
+            //view.layer.addSublayer(previewLayer)
+            //previewLayer.frame = view.frame
+            
+            previewLayer.videoGravity = AVLayerVideoGravity.resizeAspectFill
+            previewLayer.frame = cameraView.bounds
+            cameraView.layer.addSublayer(previewLayer)
+            
+            faceFrameView = UIView()
+            
+            let dataOutput = AVCaptureVideoDataOutput()
+            dataOutput.setSampleBufferDelegate(self, queue: DispatchQueue(label: "videoQueue"))
+            captureSession.addOutput(dataOutput)
         }
         
         //        self.frase1lbl.isHidden = false
@@ -311,78 +288,142 @@ class ConfirmacaoVC: UIViewController, CLLocationManagerDelegate, UIPickerViewDa
         //
     }
     
-    func metadataOutput(_ captureOutput: AVCaptureMetadataOutput, didOutput metadataObjects: [AVMetadataObject], from connection: AVCaptureConnection) {
+    func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         
+        let imageBuffer: CVPixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer)!
+        let ciimage : CIImage = CIImage(cvPixelBuffer: imageBuffer)
+        let image : UIImage = self.convert(cmage: ciimage)
+        let imageView = UIImageView(image: image)
         
-        // Check if the metadataObjects array is not nil and it contains at least one object.
-        if metadataObjects == nil || metadataObjects.count == 0 {
-            faceFrameView?.frame = CGRect.zero
-            //messageLabel.text = "No QR/barcode is detected"
-            return
+        imageView.contentMode = .scaleAspectFill
+        let scaleHeight = view.frame.width / image.size.width * image.size.height
+        imageView.frame = CGRect(x: 0, y: 0, width: view.frame.width, height: scaleHeight)
+
+        let request = VNDetectFaceRectanglesRequest { (req, err)
+            in
+            if let err = err {
+                print("Failed to detect faces:", err)
+                return
+            }
+            req.results?.forEach({ (res) in
+                DispatchQueue.main.async {
+                    guard let faceObservation = res as? VNFaceObservation else { return }
+                    let x = self.view.frame.width * faceObservation.boundingBox.origin.x
+                    let height = scaleHeight * faceObservation.boundingBox.height
+                    let y = scaleHeight * (1 - faceObservation.boundingBox.origin.y) - height
+                    let wifth = self.view.frame.width * faceObservation.boundingBox.width
+                    
+                    let redView = UIView()
+                    redView.backgroundColor = .red
+                    redView.alpha = 0.4
+                    redView.frame = CGRect(x: x, y: y, width: wifth, height: height)
+                    self.view.addSubview(redView)
+                }
+            })
+            //print(req)
+            self.qtdeFotos = self.qtdeFotos + 1
+            if (self.qtdeFotos < 5 && self.qtdeFotos != 1) {
+                //UIImageWriteToSavedPhotosAlbum(self.fixOrientation(img: image), self, nil, nil)
+                if let imgData = UIImageJPEGRepresentation(self.fixOrientation(img: image), 0.2) {
+                    let imguid = NSUUID().uuidString
+                    let metadata = FIRStorageMetadata()
+                    metadata.contentType = "image/jpg"
+                    
+                    DataService.ds.REF_POST_IMAGES.child(imguid).put(imgData, metadata: metadata) { (metadata, error) in
+                        if error != nil {
+                            print("DOKI: Unabled to upload to Firebase storage")
+                        } else {
+                            print("DOKI: Successfully uploaded image to Firebase storage")
+                            let downloadUrl = (metadata?.downloadURL()?.absoluteURL.absoluteString)!
+                        }
+                    }
+                }
+            }
+            //            self.captureSession?.stopRunning()
+            //            let data = round(Date().timeIntervalSince1970)
+            //            let randomNum:UInt32 = arc4random_uniform(10000) // range is 0 to 99999
+            //            self.ID = String(format: "%05d", randomNum) //string works too
+            //            //ID = ID + String(round(Date().timeIntervalSince1970))
+            //
+            //            let posttransacao : Dictionary<String, AnyObject> = [
+            //                "carteira": self.carteiraField.text as AnyObject,
+            //                "data": data as AnyObject,
+            //                "idContrato": self.contratoid as AnyObject,
+            //                "latitude": self.lat as AnyObject,
+            //                "longitude": self.lon as AnyObject,
+            //                "user": userUUID as AnyObject,
+            //                "valor": self.valorLbl.text as AnyObject,
+            //                "vedendor" : self.vendedor as AnyObject
+            //            ]
+            //            let firebasePost = DataService.ds.REF_TRANSACAO.childByAutoId()
+            //            firebasePost.setValue(posttransacao)
+            //
+            //            let controller = self.storyboard?.instantiateViewController(withIdentifier: "ReciboVC") as! ReciboVC
+            //            controller.valor = self.valorLbl.text
+            //            controller.data = data
+            //            controller.id = self.ID
+            //            controller.carteira = self.carteiraField.text
+            //
+            //            self.frase1lbl.isHidden = true
+            //            self.fraseTexto.isHidden = true
+            //            self.confirmarBtn.setTitle("Confirmar" , for: .normal)
+            //
+            //            self.present(controller, animated: true, completion: nil)
+            
         }
         
-        // Get the metadata object.
-        let metadataObj = metadataObjects[0] as! AVMetadataFaceObject
-        
-        if supportedFaceType.contains(metadataObj.type) {
-            
-            captureSession?.stopRunning()
-            let data = round(Date().timeIntervalSince1970)
-            let randomNum:UInt32 = arc4random_uniform(10000) // range is 0 to 99999
-            ID = String(format: "%05d", randomNum) //string works too
-            //ID = ID + String(round(Date().timeIntervalSince1970))
-            
-            let posttransacao : Dictionary<String, AnyObject> = [
-                "carteira": carteiraField.text as AnyObject,
-                "data": data as AnyObject,
-                "idContrato": contratoid as AnyObject,
-                "latitude": lat as AnyObject,
-                "longitude": lon as AnyObject,
-                "user": userUUID as AnyObject,
-                "valor": self.valorLbl.text as AnyObject,
-                "vedendor" : vendedor as AnyObject
-            ]
-            let firebasePost = DataService.ds.REF_TRANSACAO.childByAutoId()
-            firebasePost.setValue(posttransacao)
-            
-            let controller = self.storyboard?.instantiateViewController(withIdentifier: "ReciboVC") as! ReciboVC
-            controller.valor = self.valorLbl.text
-            controller.data = data
-            controller.id = ID
-            controller.carteira = carteiraField.text
-            
-            self.frase1lbl.isHidden = true
-            self.fraseTexto.isHidden = true
-            self.confirmarBtn.setTitle("Confirmar" , for: .normal)
-            
-            self.present(controller, animated: true, completion: nil)
-            //
-            //            let renderer = UIGraphicsImageRenderer(size: (cameraView?.bounds.size)!)
-            //            let image = renderer.image { ctx in
-            //                view.drawHierarchy(in: (cameraView?.bounds)!, afterScreenUpdates: true)
-            //            }
-            //
-            //            let img = image
-            //
-            //            if let imgData = UIImageJPEGRepresentation(img, 0.2) {
-            //                let imguid = NSUUID().uuidString
-            //                let metadata = FIRStorageMetadata()
-            //                metadata.contentType = "image/jpeg"
-            //
-            //                DataService.ds.REF_POST_IMAGES.child(imguid).put(imgData, metadata: metadata) { (metadata, error) in
-            //                    if error != nil {
-            //                        print("DOKI: Unabled to upload to Firebase storage")
-            //                    } else {
-            //                        print("DOKI: Successfully uploaded image to Firebase storage")
-            //                        let downloadUrl = (metadata?.downloadURL()?.absoluteURL.absoluteString)!
-            //
-            //                    }
-            //                }
-            
+        guard let cgImage = image.cgImage else { return }
+        let handler = VNImageRequestHandler (cgImage: cgImage, options: [:])
+        do {
+            try handler.perform([request])
+        } catch let reqErr {
+            print("Failed to perform request:", reqErr)
         }
     }
     
+    func image(_ image: UIImage, didFinishSavingWithError error: Error?, contextInfo: UnsafeRawPointer) {
+        if let error = error {
+            // we got back an error!
+            let ac = UIAlertController(title: "Save error", message: error.localizedDescription, preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            present(ac, animated: true)
+        } else {
+            let ac = UIAlertController(title: "Saved!", message: "Your altered image has been saved to your photos.", preferredStyle: .alert)
+            ac.addAction(UIAlertAction(title: "OK", style: .default))
+            present(ac, animated: true)
+        }
+    }
     
+    func fixOrientation(img: UIImage) -> UIImage {
+        var transform = CGAffineTransform.identity
+        transform = transform.translatedBy(x: 0, y: img.size.height)
+        transform = transform.rotated(by: CGFloat(-Double.pi/2))
+        let ctx = CGContext(data: nil, width: Int(img.size.width), height: Int(img.size.height), bitsPerComponent: img.cgImage!.bitsPerComponent, bytesPerRow: 0, space: img.cgImage!.colorSpace!, bitmapInfo: img.cgImage!.bitmapInfo.rawValue)
+        
+        ctx!.concatenate(transform);
+        ctx?.draw(img.cgImage!, in: CGRect(origin: .zero, size: CGSize(width: img.size.height, height: img.size.width)))
+        let cgimg = ctx!.makeImage()
+        let img = UIImage(cgImage: cgimg!)
+        
+        
+        UIGraphicsBeginImageContextWithOptions(img.size, false, img.scale)
+        let rect = CGRect(x: 0, y: 0, width: img.size.width, height: img.size.height)
+        img.draw(in: rect)
+        
+        
+        let normalizedImage = UIGraphicsGetImageFromCurrentImageContext()!
+        UIGraphicsEndImageContext()
+        
+        return normalizedImage
+    }
+    
+    func convert(cmage:CIImage) -> UIImage
+    {
+        let context:CIContext = CIContext.init(options: nil)
+        let cgImage:CGImage = context.createCGImage(cmage, from: cmage.extent)!
+        let image:UIImage = UIImage.init(cgImage: cgImage)
+        return image
+    }
     
     func numberOfComponents(in pickerView: UIPickerView) -> Int {
         return 1

@@ -11,28 +11,29 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "LeituraQRCodeVC.metadataOutput(_:didOutput:from:):LeituraQRCodeVC.swift">
+         contextName = "ConfirmacaoVC.confirmarPressed(_:):ConfirmacaoVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "metadataObj.stringValue">
+               value = "AVCaptureDevice.Position.front">
+            </PersistentString>
+            <PersistentString
+               value = "confirmarBtn.titleLabel?.text">
+            </PersistentString>
+            <PersistentString
+               value = "device.position">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "ConfirmacaoVC.metadataOutput(_:didOutput:from:):ConfirmacaoVC.swift">
+         contextName = "LeituraCartaoVC.(salvarPressed(UIButton) -&gt; ()).(closure #1):LeituraCartaoVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "faceFrameView">
+               value = "(responseJSON[&quot;data&quot;] as NSDictionary)[&quot;address&quot;] as String">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
-         <PersistentStrings>
-            <PersistentString
-               value = "&quot;teste \(error)&quot;">
-            </PersistentString>
-         </PersistentStrings>
+         contextName = "closure #1 in closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
       </ContextState>
       <ContextState
          contextName = "GenerateQRCode.displayQRcode(UIButton) -&gt; ():GenerateQRCode.swift">
@@ -51,10 +52,10 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "LeituraCartaoVC.(salvarPressed(UIButton) -&gt; ()).(closure #1):LeituraCartaoVC.swift">
+         contextName = "CadastroUsuarioVC.detect() -&gt; ():CadastroUsuarioVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "(responseJSON[&quot;data&quot;] as NSDictionary)[&quot;address&quot;] as String">
+               value = "faces.first">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
@@ -73,27 +74,34 @@
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "ConfirmacaoVC.confirmarPressed(_:):ConfirmacaoVC.swift">
+         contextName = "ConfirmacaoVC.metadataOutput(_:didOutput:from:):ConfirmacaoVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "AVCaptureDevice.Position.front">
-            </PersistentString>
-            <PersistentString
-               value = "confirmarBtn.titleLabel?.text">
-            </PersistentString>
-            <PersistentString
-               value = "device.position">
+               value = "faceFrameView">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
       <ContextState
-         contextName = "closure #1 in closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
-      </ContextState>
-      <ContextState
-         contextName = "CadastroUsuarioVC.detect() -&gt; ():CadastroUsuarioVC.swift">
+         contextName = "LeituraQRCodeVC.metadataOutput(_:didOutput:from:):LeituraQRCodeVC.swift">
          <PersistentStrings>
             <PersistentString
-               value = "faces.first">
+               value = "metadataObj.stringValue">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "closure #1 in ConfirmacaoVC.captureOutput(_:didOutput:from:):ConfirmacaoVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "image.imageOrientation">
+            </PersistentString>
+         </PersistentStrings>
+      </ContextState>
+      <ContextState
+         contextName = "closure #1 in CadastroUsuarioVC.cadastrarBtn(_:):CadastroUsuarioVC.swift">
+         <PersistentStrings>
+            <PersistentString
+               value = "&quot;teste \(error)&quot;">
             </PersistentString>
          </PersistentStrings>
       </ContextState>
